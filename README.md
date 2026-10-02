@@ -38,73 +38,92 @@ The underlying CFD simulation itself is not included in this repository.
 
 ## Processing Workflow
 
-The project follows a staged post-processing workflow:
+The project follows a staged post-processing workflow with separate Q-criterion and total-pressure paths.
 
 ```text
 Existing OpenFOAM CFD Results
-            |
-            v
-      ParaView Reader
-            |
-            v
-   Geometry / Domain Clipping
-            |
-            +-----------------------------+
-            |                             |
-            v                             v
-     Q-Criterion Path              Pressure Path
-            |                             |
-            v                             v
-     Gradient Filter               Total Pressure
-            |                      Calculation
-            v                             |
-      X-Normal Slice                      v
-            |                       Y-Normal Slice
-            v                             |
-      Spatial Mask                        v
-            |                     Moving Slice Track
-            v                             |
-   Fixed Visualization                    v
-        Settings                   Fixed Visualization
-            |                          Settings
-            v                             |
-    Transient Analysis                    v
-            |                        Animation
-            v
-       Results / Images
+              |
+              v
+        ParaView Reader
+              |
+              v
+     Domain / Geometry Setup
+              |
+       +------+------+
+       |             |
+       v             v
+ Q-Criterion     Pressure Path
+     Path             |
+       |              v
+       v        Total-Pressure
+q_range_finder.py    Calculation
+       |              |
+       v              v
+ Q-Range         Y-Normal Slice
+ Calibration          |
+       |              v
+       v         Moving Slice
+q_criterion_final.py  |
+       |              v
+       v          Animation
+Final Single-
+Time-Step Images
+       |
+       v
+transient_q_pipeline.py
+       |
+       v
+Transient Combined
+Q-Criterion Analysis
 ```
 
 ---
 
 ## Source Code
 
-The automated post-processing workflow is implemented using three main Python/ParaView scripts.
+The automated post-processing workflow is organized into **four Python/ParaView scripts**.
 
-### `Task3-4_Q_Range.py`
+### `q_range_finder.py`
 
-Single-time-step Q-criterion visualization workflow using calibrated display settings for the blade-tip, hub/junction, and combined regions.
+Single-time-step Q-criterion display-range calibration workflow.
 
-Selected Q display ranges:
+The calibration stage evaluates candidate visualization ranges for the blade-tip, hub/junction, and combined regions before fixed display settings are selected.
+
+The final selected Q-criterion display ranges used in the project were:
 
 | Region | Q Display Range |
 |---|---:|
-| Blade-tip | 50–600 |
+| Blade tip | 50–600 |
 | Hub / junction | 50–1200 |
 | Combined | 50–1100 |
 
-### `tip_hub_pipeline_final.py`
+> **Source note:** The exact original standalone range-finder source was not available in the retained project files. The version included in this repository is a reconstructed portfolio implementation based on the calibration procedure documented in the project report.
 
-Transient combined blade-tip and hub/junction Q-criterion workflow.
+### `q_criterion_final.py`
 
-Main visualization settings:
+Final single-time-step Q-criterion visualization workflow.
+
+The script uses the calibrated display ranges to produce the final visualization for the selected:
+
+- blade-tip region;
+- hub/junction region; or
+- combined tip-and-hub region.
+
+The processing pipeline includes domain clipping, Q-criterion calculation from the velocity field, an X-normal slice, spatial masking, fixed visualization settings, and screenshot export.
+
+### `transient_q_pipeline.py`
+
+Transient combined blade-tip and hub/junction Q-criterion post-processing workflow.
+
+Main visualization settings include:
 
 - Q display range: **50–1100**
 - visualization-suppression threshold: **Q = 550**
 - X-normal slice
 - Y-Z visualization plane
-- fixed camera
+- spatial masking
+- fixed camera configuration
 - fixed colour range
-- consistent spatial-selection logic
 
 > **Note:** Q = 550 is used as a visualization-suppression threshold for visual clarity. It is not treated as a universal physical vortex boundary or as a numerically validated noise threshold.
 
@@ -112,7 +131,7 @@ Main visualization settings:
 
 Automated total-pressure and moving-slice visualization workflow.
 
-The script calculates total pressure and moves a Y-normal X-Z slice through the CFD domain while the transient CFD solution advances.
+The script calculates total pressure from the supplied pressure and velocity fields and creates a Y-normal X-Z slice that moves through the CFD domain while the transient solution advances.
 
 ➡️ [View the Python source files](src/)
 
@@ -122,17 +141,19 @@ The script calculates total pressure and moves a Y-normal X-Z slice through the 
 
 ## 1. Q-Criterion Range Calibration
 
-Before the transient visualization was created, different Q-criterion display ranges were compared.
+Before the final Q-criterion visualizations were created, candidate display ranges were compared.
 
 The objective was to establish consistent visualization settings instead of relying only on automatic colour rescaling.
 
 ![Q-Criterion Range Calibration](images/q_range_calibration.png)
 
-The selected ranges were:
+The final selected ranges were:
 
-- **Blade-tip:** Q = 50–600
+- **Blade tip:** Q = 50–600
 - **Hub / junction:** Q = 50–1200
 - **Combined:** Q = 50–1100
+
+These ranges are visualization settings selected for this workflow and should not be interpreted as universal vortex-identification thresholds.
 
 ---
 
@@ -174,7 +195,7 @@ with a separate visualization-suppression threshold of:
 
 The slice orientation, spatial-selection logic, camera configuration, and colour range are kept consistent throughout the sequence.
 
-This makes qualitative comparison between representative transient frames more meaningful.
+This allows representative transient frames to be compared using the same visualization configuration.
 
 ![Transient Q-Criterion Frames](images/transient_q_frames.png)
 
@@ -186,11 +207,15 @@ The frames represent different CFD time steps from the same automated processing
 
 Total pressure is calculated from the supplied pressure and velocity fields using:
 
-**p_total = p + 0.5 ρ |U|²**
+```text
+p_total = p + 0.5 * rho * |U|^2
+```
 
 where:
 
-**ρ = 1025 kg/m³**
+```text
+rho = 1025 kg/m³
+```
 
 The visualization uses a fixed total-pressure display range of:
 
@@ -214,7 +239,7 @@ The flow direction is toward **-Y**.
 
 The slice position and CFD solution time change together during the animation.
 
-Therefore, the sequence contains both **spatial and temporal variation** and should be interpreted as an automated visualization sweep rather than as a wake-tracking algorithm.
+Therefore, the sequence contains both **spatial and temporal variation**. It should be interpreted as an automated visualization and sampling sweep rather than as a material-surface or wake-tracking algorithm.
 
 ➡️ [View animation results and technical settings](results/)
 
@@ -253,8 +278,9 @@ bow-thruster-cfd-postprocessing-using-python-paraview/
 │
 ├── src/
 │   ├── README.md
-│   ├── Task3-4_Q_Range.py
-│   ├── tip_hub_pipeline_final.py
+│   ├── q_range_finder.py
+│   ├── q_criterion_final.py
+│   ├── transient_q_pipeline.py
 │   └── pressure_moving_slice.py
 │
 ├── images/
@@ -283,11 +309,13 @@ The project demonstrates how scripted post-processing can make CFD visualization
 
 The Q-criterion workflow provides a method for examining rotation-dominated structures in selected blade-tip and hub/junction regions.
 
-The transient workflow applies the same visualization configuration across multiple CFD time steps, allowing visible changes in the retained Q-criterion structures to be compared consistently.
+The calibration stage establishes documented visualization ranges before those settings are applied to the final single-time-step results.
+
+The transient workflow then applies a consistent combined visualization configuration across multiple CFD time steps, allowing visible changes in the retained Q-criterion structures to be compared under the same post-processing settings.
 
 The total-pressure workflow provides a second perspective on the flow field by combining the supplied static-pressure field with the local velocity contribution.
 
-The moving slice extends this analysis across different locations through the domain.
+The moving slice extends this visualization through different Y positions in the domain while the CFD solution time also advances.
 
 ---
 
@@ -307,6 +335,10 @@ The work should not be interpreted as:
 - complete three-dimensional vortex tracking.
 
 Q display limits, spatial masks, and suppression thresholds are visualization choices and require engineering judgement.
+
+A two-dimensional slice cannot represent the complete three-dimensional vortex topology.
+
+The moving pressure slice changes position while the CFD time advances, so spatial development and temporal variation cannot be separated from that animation alone.
 
 A visually clear CFD result should not by itself be interpreted as numerical or physical validation of the underlying simulation.
 

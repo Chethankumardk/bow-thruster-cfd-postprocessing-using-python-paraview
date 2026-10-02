@@ -4,25 +4,39 @@ This directory contains the Python/ParaView scripts used in the bow-thruster CFD
 
 ## Workflow Scripts
 
-The repository contains three main scripts.
+The repository contains four Python scripts covering Q-criterion calibration, final single-time-step visualization, transient Q-criterion visualization, and moving total-pressure analysis.
 
-### `Task3-4_Q_Range.py`
+### `q_range_finder.py`
 
-Single-time-step Q-criterion visualization script using the calibrated display ranges for the regions of interest.
+Single-time-step Q-criterion display-range calibration workflow.
 
-The configured Q display ranges are:
+The script evaluates candidate Q-criterion display ranges for the blade-tip, hub/junction, and combined regions before the final visualization settings are selected.
+
+The final selected display ranges used in the project were:
 
 - Blade-tip region: **50–600**
 - Hub/junction region: **50–1200**
 - Combined region: **50–1100**
 
-This script supports visualization of the selected blade-tip, hub/junction, or combined region using consistent Q-criterion display settings.
+> **Source note:** The exact original standalone range-finder source was not available in the retained project files. The version included in this repository is a reconstructed portfolio implementation based on the calibration procedure documented in the project report.
 
-### `tip_hub_pipeline_final.py`
+### `q_criterion_final.py`
+
+Final single-time-step Q-criterion visualization workflow.
+
+The script uses the calibrated display ranges to generate the final visualization for the selected:
+
+- blade-tip region
+- hub/junction region
+- combined tip-and-hub region
+
+The workflow includes domain clipping, Q-criterion calculation from the velocity field, an X-normal slice, spatial masking, fixed visualization settings, and screenshot export.
+
+### `transient_q_pipeline.py`
 
 Transient combined tip-and-hub Q-criterion post-processing workflow.
 
-The script applies the Q-criterion workflow across the available CFD time steps while maintaining consistent visualization settings.
+The script applies the combined Q-criterion workflow across the available CFD time steps while maintaining consistent visualization settings.
 
 Key settings include:
 
@@ -39,38 +53,79 @@ Key settings include:
 
 Automated total-pressure and moving-slice visualization workflow.
 
-The workflow calculates total pressure from the supplied pressure and velocity fields and uses a Y-normal X-Z slice that moves through the CFD domain.
+Total pressure is calculated as:
 
-The slice moves from:
+```text
+p_total = p + 0.5 * rho * |U|^2
+```
+
+using:
+
+```text
+rho = 1025 kg/m³
+```
+
+The workflow uses a Y-normal X-Z slice that moves from:
 
 **Y = +0.3 m to Y = -1.5 m**
 
-while the CFD solution time also advances.
+with a fixed total-pressure visualization range of:
+
+**70–140 kPa**
+
+The CFD solution time advances while the slice position changes. Therefore, the animation combines spatial and temporal variation and should not be interpreted as material-surface or wake tracking.
 
 ## Processing Overview
 
 ```text
 Existing OpenFOAM CFD Results
-        |
-        +----------------------+
-        |                      |
-        v                      v
-Task3-4_Q_Range.py    pressure_moving_slice.py
-        |                      |
-        v                      v
-Single-Time-Step       Total-Pressure &
-Q Visualization        Moving-Slice Analysis
-        |
-        v
-tip_hub_pipeline_final.py
-        |
-        v
-Transient Combined
-Q-Criterion Visualization
+              |
+              v
+      q_range_finder.py
+              |
+              v
+   Q-Range Calibration
+              |
+              v
+    q_criterion_final.py
+              |
+              v
+Final Single-Time-Step Images
+              |
+              v
+   transient_q_pipeline.py
+              |
+              v
+Transient Combined Q-Criterion
+        Visualization
+
+
+Existing OpenFOAM CFD Results
+              |
+              v
+ pressure_moving_slice.py
+              |
+              v
+ Total-Pressure Calculation
+              |
+              v
+Moving Y-Normal Slice Animation
 ```
+
+## Running the Scripts
+
+The scripts are intended for use with ParaView's Python environment.
+
+Before running them, update the example OpenFOAM case path:
+
+```python
+CASE_PATH = "/path/to/your/openfoam/case/result.foam"
+```
+
+The underlying OpenFOAM CFD simulation data are not included in this repository.
 
 ## Important Note
 
-The underlying OpenFOAM CFD simulation is not included in this repository.
+This project focuses on automated post-processing and scientific visualization of an existing OpenFOAM bow-thruster CFD simulation.
 
-This project focuses on automated CFD post-processing and scientific visualization using Python and ParaView.
+The repository does not claim development or validation of the underlying CFD simulation itself.

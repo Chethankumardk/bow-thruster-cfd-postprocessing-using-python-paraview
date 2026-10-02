@@ -1,7 +1,5 @@
 """
-Q-RANGE CALIBRATION SWEEP — RECONSTRUCTED PORTFOLIO IMPLEMENTATION
-
-
+Q-RANGE CALIBRATION SWEEP
 
 Workflow:
 OpenFOAM -> cylinder clip -> box clip -> Gradient(Q) -> X-normal slice

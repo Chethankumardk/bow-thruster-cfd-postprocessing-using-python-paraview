@@ -1,59 +1,82 @@
-# Results Summary
+# CFD Post-Processing Results
 
-This directory summarizes the main results and visualization settings from the automated bow-thruster CFD post-processing workflow.
+This folder contains the main animation results from the automated post-processing workflow developed for an existing OpenFOAM bow-thruster CFD simulation.
 
-The project post-processes an existing OpenFOAM simulation using Python and ParaView.
+The workflow uses Python and ParaView to automate Q-criterion vortex visualization and total-pressure field analysis.
 
-## Q-Criterion Visualization
+## 1. Transient Q-Criterion Visualization
 
-A Q-criterion range study was used to establish consistent visualization settings for different regions of interest.
+The combined blade-tip and hub/junction Q-criterion workflow was applied across the available transient CFD time steps.
 
-| Analysis | Selected Q Display Range |
-|---|---:|
-| Blade-tip region | 50–600 |
-| Hub/junction region | 50–1200 |
-| Combined tip and hub | 50–1100 |
+The visualization configuration was kept consistent throughout the animation to support qualitative comparison between time steps.
 
-For the transient combined visualization, a separate threshold of **Q = 550** was used to suppress weaker structures for visual clarity.
+### Visualization Settings
 
-> **Note:** Q = 550 is a visualization-suppression threshold. It is not treated as a universal physical vortex boundary or as a numerically validated noise threshold.
+- Q-criterion display range: **50–1100**
+- Visualization-suppression threshold: **Q = 550**
+- Slice normal: **[1, 0, 0]**
+- Slice plane: **Y-Z**
+- Camera direction: along the X-axis
+- Fixed camera and colour range across the transient sequence
 
-## Transient Vortex Visualization
+The animation shows how the visible Q-criterion structures change with CFD time while the post-processing geometry remains fixed.
 
-The combined tip-and-hub workflow was evaluated across the available CFD time steps while maintaining consistent:
+> **Important:** Q = 550 is used as a visualization-suppression threshold for visual clarity. It should not be interpreted as a universal physical vortex boundary or as a numerically validated noise threshold.
 
-- Q display range
-- slice orientation
-- spatial-selection logic
-- camera configuration
-- visualization settings
+### Animation
 
-This allows qualitative comparison of the visible Q-criterion structures between representative transient frames.
+`transient_q_criterion.mp4`
 
-## Total-Pressure Analysis
+Representative frames from this animation are available in the [`images`](../images/) directory.
 
-Total pressure was calculated using:
+---
+
+## 2. Moving Total-Pressure Slice
+
+A second automated workflow was developed to visualize the total-pressure field using a moving cross-sectional slice.
+
+Total pressure was calculated as:
 
 **p_total = p + 0.5 ρ |U|²**
 
-with:
+using a seawater density of:
 
 **ρ = 1025 kg/m³**
 
-The visualization used a fixed total-pressure display range of:
+### Visualization Settings
 
-**70–140 kPa**
+- Total-pressure display range: **70–140 kPa**
+- Slice normal: **[0, 1, 0]**
+- Slice plane: **X-Z**
+- Start position: **Y = +0.3 m**
+- End position: **Y = -1.5 m**
+- Flow direction: **-Y**
+- Camera direction: along the Y-axis
 
-## Moving Pressure Slice
+### Animation
 
-A Y-normal X-Z slice was moved through the domain from:
+`moving_total_pressure_slice.mp4`
 
-**Y = +0.3 m → Y = -1.5 m**
+The slice position changes while the CFD solution time also advances. Therefore, the animation contains both spatial and temporal variation.
 
-The CFD time advances while the slice position changes. Therefore, the resulting sequence represents combined spatial and temporal sampling rather than automatic wake tracking.
+It should be interpreted as an automated visualization and sampling sweep through the CFD domain rather than as a wake-tracking algorithm.
 
-## Visualization Results
+Representative frames from the moving-slice workflow are available in the [`images`](../images/) directory.
 
-The selected figures are available in the [`images`](../images/) directory.
+---
 
-The main project README provides the complete workflow description and visual results.
+## Result Summary
+
+The automated post-processing workflow demonstrates:
+
+- systematic Q-criterion visualization;
+- transient comparison using consistent visualization settings;
+- automated blade-tip and hub/junction vortex visualization;
+- total-pressure calculation from pressure and velocity fields;
+- automated moving-slice visualization;
+- consistent camera and colour-range control; and
+- reproducible CFD post-processing using Python and ParaView.
+
+The underlying OpenFOAM simulation is not included in this repository. This project focuses on post-processing, automation, and scientific visualization of the supplied CFD results.
+
+For the complete methodology and selected figures, see the [main project README](../README.md).
